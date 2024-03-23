@@ -6,7 +6,7 @@ Visualize your textures inside ComfyUI
 ![image](https://github.com/gokayfem/ComfyUI-Texture-Simple/assets/88277926/594f4b2b-12a6-40a9-9ecc-8f56c5c0448f)
 
 ## Suggestions
-- You can use mtb nodes to creates textures inside ComfyUI. 
+- You can use mtb nodes to create textures inside ComfyUI. 
 [mtb nodes](https://github.com/melMass/comfy_mtb/)  
 
 - If you want to reset the scene, unconnect a texture then queue prompt and connect it again queue prompt.
