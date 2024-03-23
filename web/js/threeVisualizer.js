@@ -412,6 +412,34 @@ materialFolder.add(params, 'transparent').name('Transparent').onChange((value) =
     needUpdate = true;
 });
 
+document.getElementById('downloadButton').addEventListener('click', download);
+
+function download() {
+    const exporter = new GLTFExporter();
+    exporter.parse(scene, function (gltfJson) {
+      const jsonString = JSON.stringify(gltfJson);
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = "scene.glb";
+      link.click();
+      URL.revokeObjectURL(url);
+      console.log("Download requested");
+    }, { binary: true });
+  }
+
+document.getElementById('screenshotButton').addEventListener('click', takeScreenshot);
+
+function takeScreenshot() {
+    renderer.render(scene, camera);
+    const dataURL = renderer.domElement.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = dataURL;
+    link.download = "screenshot.png";
+    link.click();
+    console.log("Screenshot taken");
+}
 
 
 
