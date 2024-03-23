@@ -222,18 +222,18 @@ async function main(colorMapParams, displacementMapParams, normalMapParams, aoMa
 
 
     sphere = new THREE.Mesh(
-        new THREE.SphereGeometry(10, 32, 32),
+        new THREE.SphereGeometry(10, 128, 128),
         material
     )
     sphere.position.x = - 35
     
     cube = new THREE.Mesh(
-        new THREE.BoxGeometry(15, 15, 15, 16, 16, 16),
+        new THREE.BoxGeometry(15, 15, 15, 64, 64, 64),
         material
     )
     
     torus = new THREE.Mesh(
-        new THREE.TorusGeometry(10, 3, 64, 32),
+        new THREE.TorusGeometry(10, 3, 128, 64),
         material
     )
 
