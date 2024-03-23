@@ -109,7 +109,7 @@ function frameUpdate(sphere, cube, torus) {
         main(...Object.values(currentMaps).map(JSON.parse));
         
     }
-    requestAnimationFrame(() => frameUpdate(sphere, cube, torus));
+    animationFrameId = requestAnimationFrame(() => frameUpdate(sphere, cube, torus));
     
 }
 
