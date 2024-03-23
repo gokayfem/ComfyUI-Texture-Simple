@@ -54,28 +54,27 @@ class TextureViewer:
 
         if displacement_map is not None:
             displacement_map = displacement_map[0].detach().cpu().numpy()
-            displacement_map = Image.fromarray(np.clip(255. * displacement_map, 0, 255).astype(np.uint8))
+            displacement_map = Image.fromarray(np.clip(255. * displacement_map, 0, 255).astype(np.uint8)).convert('RGB')
 
         if normal_map is not None:
             normal_map = normal_map[0].detach().cpu().numpy()
-            normal_map = Image.fromarray(np.clip(255. * normal_map, 0, 255).astype(np.uint8))
+            normal_map = Image.fromarray(np.clip(255. * normal_map, 0, 255).astype(np.uint8)).convert('RGB')
 
         if ao_map is not None:
             ao_map = ao_map[0].detach().cpu().numpy()
-            ao_map = Image.fromarray(np.clip(255. * ao_map, 0, 255).astype(np.uint8))
+            ao_map = Image.fromarray(np.clip(255. * ao_map, 0, 255).astype(np.uint8)).convert('RGB')
 
         if metalness_map is not None:
             metalness_map = metalness_map[0].detach().cpu().numpy()
-            metalness_map = Image.fromarray(np.clip(255. * metalness_map, 0, 255).astype(np.uint8))
+            metalness_map = Image.fromarray(np.clip(255. * metalness_map, 0, 255).astype(np.uint8)).convert('RGB')
 
         if roughness_map is not None:
             roughness_map = roughness_map[0].detach().cpu().numpy()
-            roughness_map = Image.fromarray(np.clip(255. * roughness_map, 0, 255).astype(np.uint8))
+            roughness_map = Image.fromarray(np.clip(255. * roughness_map, 0, 255).astype(np.uint8)).convert('RGB')
 
         if alpha_map is not None:
             alpha_map = alpha_map[0].detach().cpu().numpy()
-            alpha_map = Image.fromarray(np.clip(255. * alpha_map, 0, 255).astype(np.uint8))
-        print(normal_map)
+            alpha_map = Image.fromarray(np.clip(255. * alpha_map, 0, 255).astype(np.uint8)).convert('RGB')
         return self.display([color_map], [displacement_map], [normal_map], [ao_map], [metalness_map], [roughness_map], [alpha_map])
 
     def save_and_append(self, image_map, image_type):
