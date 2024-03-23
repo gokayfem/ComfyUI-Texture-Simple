@@ -73,6 +73,8 @@ var lastMaps = {
 var needUpdate = false;
 
 let isMaterialSideAdded = false;
+let animationFrameId;
+let isAnimationRunning = false;
 
 function frameUpdate(sphere, cube, torus) {
     var currentMaps = {
@@ -483,6 +485,28 @@ function updateAllTextureRepeats(repeatX, repeatY) {
 }
 
 updateAllTextureRepeats('repeatX', 'repeatY');
+
+// Function to stop the animation
+function toggleAnimation() {
+    if (isAnimationRunning) {
+        // Stop the animation
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+            console.log("Animation stopped");
+        }
+    } else {
+        // Start the animation
+        if (!animationFrameId) { // Only start if not already running
+            frameUpdate(sphere, cube, torus); // Ensure these are accessible
+            console.log("Animation started");
+        }
+    }
+    isAnimationRunning = !isAnimationRunning; // Toggle the state
+}
+
+// Add a toggle button to the GUI
+gui.add({toggleAnimation}, 'toggleAnimation').name('Toggle Animation');
 
 document.getElementById('downloadButton').addEventListener('click', download);
 
