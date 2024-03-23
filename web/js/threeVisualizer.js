@@ -256,7 +256,7 @@ async function main(colorMapParams, displacementMapParams, normalMapParams, aoMa
 const gui = new dat.GUI({ width: 250 });
 
 const params = {
-    side: THREE.FrontSide,
+    side: THREE.DoubleSide,
     color: '#ffffff', // Default color
     emissive: '#000000', // Default emissive color
     roughness: 1,
