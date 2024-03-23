@@ -136,6 +136,14 @@ async function loadTexture(params) {
     return null;
 }
 
+function applyTextureSettings(texture, params) {
+    if (texture) {
+        texture.wrapS = params.wrapS;
+        texture.wrapT = params.wrapT;
+        texture.repeat.set(params.repeatX, params.repeatY);
+    }
+}
+
 let material;
 let sphere, cube, torus;
 async function main(colorMapParams, displacementMapParams, normalMapParams, aoMapParams, metalnessMapParams, roughnessMapParams, alphaMapParams) {
@@ -158,13 +166,15 @@ async function main(colorMapParams, displacementMapParams, normalMapParams, aoMa
      
         colorTexture.colorSpace = THREE.SRGBColorSpace;
         material.map = colorTexture;
+        applyTextureSettings(colorTexture, params);
     }
 
     // Check if displacement_map is available
     if (displacementTexture) {
      
         material.displacementMap = displacementTexture;
-        material.displacementScale = 0.1
+        material.displacementScale = params.displacementScale;
+        applyTextureSettings(displacementTexture, params);
     }
 
     // Check if normal_map is available
@@ -172,7 +182,8 @@ async function main(colorMapParams, displacementMapParams, normalMapParams, aoMa
      
 
         material.normalMap = normalTexture;
-        material.normalScale.set(0.5, 0.5)
+        material.normalScale.set(params.normalScale, params.normalScale);
+        applyTextureSettings(normalTexture, params);
     }
 
     // Check if ao_map is available
@@ -180,7 +191,8 @@ async function main(colorMapParams, displacementMapParams, normalMapParams, aoMa
      
 
         material.aoMap = aoTexture;
-        material.aoMapIntensity = 1
+        material.aoMapIntensity = params.aoMapIntensity;
+        applyTextureSettings(aoTexture, params);
     }
 
     // Check if metalness_map is available
@@ -188,6 +200,7 @@ async function main(colorMapParams, displacementMapParams, normalMapParams, aoMa
 
 
         material.metalnessMap = metalnessTexture;
+        applyTextureSettings(metalnessTexture, params);
     }
 
     // Check if roughness_map is available
@@ -195,6 +208,7 @@ async function main(colorMapParams, displacementMapParams, normalMapParams, aoMa
      
 
         material.roughnessMap = roughnessTexture;
+        applyTextureSettings(roughnessTexture, params);
     }
 
     // Check if alpha_map is available
@@ -202,7 +216,8 @@ async function main(colorMapParams, displacementMapParams, normalMapParams, aoMa
       
 
         material.alphaMap = alphaTexture;
-        material.transparent = true
+        material.transparent = params.transparent
+        applyTextureSettings(alphaTexture, params);
     }
 
 
@@ -267,6 +282,10 @@ const params = {
     backgroundColor: '#444444',
     opacity: 1,
     transparent: false,
+    repeatX: 1,
+    repeatY: 1,
+    wrapS: THREE.RepeatWrapping,
+    wrapT: THREE.RepeatWrapping,
 };
 
 const colorFolder = gui.addFolder('Colors');
@@ -412,6 +431,58 @@ materialFolder.add(params, 'transparent').name('Transparent').onChange((value) =
     material.transparent = value;
     needUpdate = true;
 });
+
+function updateAllTextureWraps(wrapS, wrapT) {
+    materialFolder.add(params, wrapS, { ClampToEdgeWrapping: THREE.ClampToEdgeWrapping, RepeatWrapping: THREE.RepeatWrapping, MirroredRepeatWrapping: THREE.MirroredRepeatWrapping }).name('Wrap S').onChange((value) => {
+        const textures = ['map', 'displacementMap', 'normalMap', 'aoMap', 'metalnessMap', 'roughnessMap', 'alphaMap'];
+        textures.forEach((textureProperty) => {
+            if (material[textureProperty]) {
+                material[textureProperty].wrapS = parseInt(value);
+                material[textureProperty].needsUpdate = true;
+            }
+        });
+        needUpdate = true;
+    });
+
+    materialFolder.add(params, wrapT, { ClampToEdgeWrapping: THREE.ClampToEdgeWrapping, RepeatWrapping: THREE.RepeatWrapping, MirroredRepeatWrapping: THREE.MirroredRepeatWrapping }).name('Wrap T').onChange((value) => {
+        const textures = ['map', 'displacementMap', 'normalMap', 'aoMap', 'metalnessMap', 'roughnessMap', 'alphaMap'];
+        textures.forEach((textureProperty) => {
+            if (material[textureProperty]) {
+                material[textureProperty].wrapT = parseInt(value);
+                material[textureProperty].needsUpdate = true;
+            }
+        });
+        needUpdate = true;
+    });
+}
+
+updateAllTextureWraps('wrapS', 'wrapT');
+
+function updateAllTextureRepeats(repeatX, repeatY) {
+    materialFolder.add(params, repeatX, 1, 10, 1).name('Repeat X').onChange((value) => {
+        const textures = ['map', 'displacementMap', 'normalMap', 'aoMap', 'metalnessMap', 'roughnessMap', 'alphaMap'];
+        textures.forEach((textureProperty) => {
+            if (material[textureProperty]) {
+                material[textureProperty].repeat.set(value, material[textureProperty].repeat.y);
+                material[textureProperty].needsUpdate = true;
+            }
+        });
+        needUpdate = true;
+    });
+
+    materialFolder.add(params, repeatY, 1, 10, 1).name('Repeat Y').onChange((value) => {
+        const textures = ['map', 'displacementMap', 'normalMap', 'aoMap', 'metalnessMap', 'roughnessMap', 'alphaMap'];
+        textures.forEach((textureProperty) => {
+            if (material[textureProperty]) {
+                material[textureProperty].repeat.set(material[textureProperty].repeat.x, value);
+                material[textureProperty].needsUpdate = true;
+            }
+        });
+        needUpdate = true;
+    });
+}
+
+updateAllTextureRepeats('repeatX', 'repeatY');
 
 document.getElementById('downloadButton').addEventListener('click', download);
 
