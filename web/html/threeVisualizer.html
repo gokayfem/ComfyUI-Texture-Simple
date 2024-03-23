@@ -28,7 +28,12 @@
 		</script>
 		<script id="visualizer" type="module" filepath="" crossorigin src="/extensions/ComfyUI-Texture-Simple/js/threeVisualizer.js"></script>
 		<button id="screenshotButton">Take Screenshot</button>
-		<button id="downloadButton">Export GLB</button>
+		<select id="exportFormat">
+			<option value="gltf">GLTF</option>
+			<option value="glb">GLB</option>
+			<option value="obj">OBJ</option>
+		</select>
+		<button id="downloadButton">Download</button>
 	</body>
 
 </html>

@@ -145,3 +145,10 @@ a, button, input, select {
     transform: translateY(1px);
     box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
 }
+
+#exportFormat {
+    position: absolute;
+    bottom: 40px; /* Adjust as needed */
+    right: 10px; /* Adjust as needed */
+    z-index: 1000; /* Ensure it's high enough to be on top */
+}

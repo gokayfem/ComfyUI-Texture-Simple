@@ -5,6 +5,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import * as dat from 'three/addons/libs/lil-gui.module.min'
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 
 const visualizer = document.getElementById("visualizer");
 const container = document.getElementById("container");
@@ -511,19 +512,35 @@ gui.add({toggleAnimation}, 'toggleAnimation').name('Toggle Animation');
 document.getElementById('downloadButton').addEventListener('click', download);
 
 function download() {
-    const exporter = new GLTFExporter();
-    exporter.parse(scene, function (gltfJson) {
-      const jsonString = JSON.stringify(gltfJson);
-      const blob = new Blob([jsonString], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = "scene.glb";
-      link.click();
-      URL.revokeObjectURL(url);
-      console.log("Download requested");
-    }, { binary: true });
-  }
+    const format = document.getElementById('exportFormat').value;
+    const exporter = format === 'glb' || format === 'gltf' ? new GLTFExporter() : new OBJExporter(); // Assuming OBJExporter is available
+
+    if (format === 'gltf' || format === 'glb') {
+        exporter.parse(scene, function (gltfJson) {
+            const blob = new Blob([format === 'glb' ? gltfJson : JSON.stringify(gltfJson)], { type: "application/octet-stream" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `scene.${format}`;
+            link.click();
+            URL.revokeObjectURL(url);
+            console.log("Download requested");
+        }, {
+            binary: format === 'glb'
+        });
+    } else if (format === 'obj') {
+        // This is a simplified example. You might need to adjust based on how OBJExporter works in your setup.
+        const objString = exporter.parse(scene);
+        const blob = new Blob([objString], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = "scene.obj";
+        link.click();
+        URL.revokeObjectURL(url);
+        console.log("Download requested");
+    }
+}
 
 document.getElementById('screenshotButton').addEventListener('click', takeScreenshot);
 
