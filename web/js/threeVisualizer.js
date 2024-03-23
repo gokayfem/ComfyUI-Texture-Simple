@@ -4,6 +4,7 @@ import { api } from '../../../scripts/api.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import * as dat from 'three/addons/libs/lil-gui.module.min'
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
 const visualizer = document.getElementById("visualizer");
 const container = document.getElementById("container");
