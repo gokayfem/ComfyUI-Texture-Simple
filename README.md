@@ -21,6 +21,7 @@ git clone https://github.com/gokayfem/ComfyUI-Texture-Simple.git
 - If you see a black screen, clear your browser cache.
 
 ## Example workflows for creating textures inside ComfyUI
+[SKB Workflow](https://openart.ai/workflows/RI9P1EtnxtC6SpKldOeW)
 
 [mtb nodes workflow](https://github.com/melMass/comfy_mtb/blob/main/examples/05-seamless_texture.json)
 
