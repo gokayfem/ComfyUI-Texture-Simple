@@ -9,7 +9,7 @@ dependencies = ["Pillow>=10.1.0"]
 Repository = "https://github.com/gokayfem/ComfyUI-Texture-Simple"
 
 [tool.comfy]
-PublisherId = ""
+PublisherId = "gokayfem"
 DisplayName = "ComfyUI-Texture-Simple"
 Icon = ""
 Models = [{location = "/checkpoints/model.safetensor", model_url = "https://example.com/model.zip"}]
