@@ -2,7 +2,7 @@
 name = "comfyui-texture-simple"
 description = "Visualize your textures inside ComfyUI"
 version = "1.0.1"
-license = "LICENSE"
+license = { file = "LICENSE" }
 dependencies = ["Pillow>=10.1.0"]
 
 [project.urls]
