@@ -1,3 +1,9 @@
+[DualView](https://dualview.ai) 
+
+| Tool | Description |
+|------|-------------|
+| [DualView](https://dualview.ai) | Free side-by-side comparison tool for images, videos, audios and AI prompts |
+
 # ComfyUI-Texture-Simple
 Visualize your textures inside ComfyUI
 
