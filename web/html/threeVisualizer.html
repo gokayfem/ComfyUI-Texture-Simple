@@ -1,39 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<link type="text/css" rel="stylesheet" href="/extensions/ComfyUI-Texture-Simple/style/threeStyle.css">
-		<link type="text/css" rel="stylesheet" href="/extensions/ComfyUI-Texture-Simple/style/progressStyle.css">
-	</head>
+    <head>
+        <meta charset="utf-8">
+        <meta
+            name="viewport"
+            content="width=device-width,initial-scale=1,maximum-scale=1"
+        >
+        <title>Texture Viewer</title>
+        <link rel="stylesheet" href="../style/threeStyle.css">
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "../vendor/three.module.min.mjs"
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <main id="viewer" aria-label="Interactive material preview">
+            <div id="canvas-container"></div>
+            <div id="status" role="status" aria-live="polite">Queue texture maps to preview them.</div>
+            <div id="error" role="alert" hidden></div>
 
-	<body>
-		<div id="progress-container">
-			<dialog open id="progress-dialog">
-				<p>
-					<label for="progress-indicator">Loading scene...</label>
-				</p>
-				<progress max="100" id="progress-indicator"></progress>
-			</dialog>
-		</div>
+            <section id="material-panel" hidden aria-label="Material controls">
+                <div class="panel-heading">
+                    <strong>Material</strong>
+                    <button id="close-material" type="button" aria-label="Hide material controls">×</button>
+                </div>
+                <label>Roughness <input id="roughness" type="range" min="0" max="1" step="0.01" value="0.65"></label>
+                <label>Metalness <input id="metalness" type="range" min="0" max="1" step="0.01" value="0"></label>
+                <label>Displacement <input id="displacement" type="range" min="-2" max="2" step="0.01" value="0.15"></label>
+                <label>Normal strength <input id="normal-strength" type="range" min="0" max="3" step="0.05" value="1"></label>
+                <label>AO strength <input id="ao-strength" type="range" min="0" max="3" step="0.05" value="1"></label>
+                <label>Repeat X <input id="repeat-x" type="number" min="0.1" max="20" step="0.1" value="1"></label>
+                <label>Repeat Y <input id="repeat-y" type="number" min="0.1" max="20" step="0.1" value="1"></label>
+                <label>Background <input id="background" type="color" value="#252a31"></label>
+                <label class="checkbox"><input id="auto-rotate" type="checkbox"> Auto rotate</label>
+            </section>
 
-		<div id="container"></div>
-		<script type="importmap">
-			{
-			  "imports": {
-				"three": "https://unpkg.com/three@latest/build/three.module.js",
-				"three/addons/": "https://unpkg.com/three@latest/examples/jsm/"
-			  }
-			}
-		</script>
-		<script id="visualizer" type="module" filepath="" crossorigin src="/extensions/ComfyUI-Texture-Simple/js/threeVisualizer.js"></script>
-		<button id="screenshotButton">Take Screenshot</button>
-		<select id="exportFormat">
-			<option value="gltf">GLTF</option>
-			<option value="glb">GLB</option>
-			<option value="obj">OBJ</option>
-		</select>
-		<button id="downloadButton">Download</button>
-	</body>
+            <section class="toolbar" aria-label="Texture viewer controls">
+                <label>
+                    Frame
+                    <select id="batch-select" disabled></select>
+                </label>
+                <label>
+                    Mesh
+                    <select id="mesh-select">
+                        <option value="sphere">Sphere</option>
+                        <option value="cube">Cube</option>
+                        <option value="torus">Torus</option>
+                        <option value="plane">Plane</option>
+                        <option value="showcase">Showcase</option>
+                    </select>
+                </label>
+                <input id="mesh-file" type="file" accept=".glb,.obj" hidden>
+                <button id="load-mesh" type="button">Load GLB/OBJ</button>
+                <button id="toggle-material" type="button">Material</button>
+                <button id="reset-camera" type="button">Reset</button>
+                <button id="screenshot" type="button">PNG</button>
+                <label>
+                    Export
+                    <select id="export-format">
+                        <option value="glb">GLB</option>
+                        <option value="gltf">GLTF</option>
+                        <option value="obj">OBJ</option>
+                    </select>
+                </label>
+                <button id="export-mesh" type="button">Save</button>
+            </section>
+        </main>
 
+        <script type="module" src="../js/threeVisualizer.mjs"></script>
+    </body>
 </html>
