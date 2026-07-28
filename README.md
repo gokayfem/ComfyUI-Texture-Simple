@@ -1,35 +1,62 @@
-[DualView](https://dualview.ai) 
+# ComfyUI Texture Simple
 
-| Tool | Description |
-|------|-------------|
-| [DualView](https://dualview.ai) | Free side-by-side comparison tool for images, videos, audios and AI prompts |
+An interactive PBR material viewer inside ComfyUI. Preview any combination of
+color, displacement, normal, ambient-occlusion, metalness, roughness, and alpha
+maps on built-in primitives or your own GLB/OBJ mesh.
 
-# ComfyUI-Texture-Simple
-Visualize your textures inside ComfyUI
+![Texture Viewer](https://github.com/gokayfem/ComfyUI-Texture-Simple/assets/88277926/594f4b2b-12a6-40a9-9ecc-8f56c5c0448f)
+
+## Features
+
+- Modern ComfyUI DOM-widget integration
+- Sphere, cube, torus, plane, and multi-object showcase
+- Local GLB and OBJ mesh loading in the browser
+- Batch-aware texture-map selection with single-map broadcasting
+- Live roughness, metalness, displacement, normal, AO, repeat, and background controls
+- Optional auto-rotation
+- PNG screenshots and GLB, GLTF, or OBJ export
+- Pinned local Three.js assets with no CDN dependency
+- Correct copy/paste, collapse, resize, removal, and WebGL cleanup
+- Stale-load cancellation and visible errors
 
 ## Installation
 
-```
-cd custom_nodes
+Install with ComfyUI Manager, or clone manually:
+
+```bash
+cd ComfyUI/custom_nodes
 git clone https://github.com/gokayfem/ComfyUI-Texture-Simple.git
+python -m pip install -r ComfyUI-Texture-Simple/requirements.txt
 ```
 
-## Upload any texture map and visualize it inside ComfyUI
+Restart ComfyUI after installation.
 
-![image](https://github.com/gokayfem/ComfyUI-Texture-Simple/assets/88277926/594f4b2b-12a6-40a9-9ecc-8f56c5c0448f)
+## Usage
 
-## Suggestions
-- If you want to reset the scene, unconnect a texture then queue prompt and connect it again queue prompt.
+1. Add **Texture Viewer** from `visualization/3D`.
+2. Connect any texture maps you have and queue the workflow.
+3. Choose a built-in mesh, or select **Load GLB/OBJ** for a local model.
+4. Open **Material** to tune PBR values and texture tiling.
 
-- If you see a black screen, clear your browser cache.
+When one texture input contains a single image and another contains a batch, the
+single texture is reused for every frame. Other mismatched batch sizes produce
+a clear error.
 
-## Example workflows for creating textures inside ComfyUI
-[SKB Workflow](https://openart.ai/workflows/RI9P1EtnxtC6SpKldOeW)
+GLB is the recommended export format. OBJ contains geometry only. The glTF
+material standard does not support displacement maps, so displacement remains a
+live preview control rather than a baked glTF property.
 
-[mtb nodes workflow](https://github.com/melMass/comfy_mtb/blob/main/examples/05-seamless_texture.json)
+## Development
 
-[Jags Workflow](https://openart.ai/workflows/koala_jealous_20/3d-material-texture-generator-using-sdxl-and-xy-tiling--seamless/b5B0a8OEAbypScLAC8ch)
+```bash
+python -m pip install pytest
+pytest -q
+```
 
-## Acknowledgments
+The browser assets are vendored from Three.js 0.185.1. Its MIT license is in
+`web/vendor/THREE-LICENSE.txt`.
 
-[MrForExample](https://github.com/MrForExample)
+## Acknowledgements
+
+Thanks to [MrForExample](https://github.com/MrForExample) and the ComfyUI
+community for the original viewer patterns and feedback.
