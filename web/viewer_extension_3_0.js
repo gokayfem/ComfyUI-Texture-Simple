@@ -1,9 +1,10 @@
+// Versioned entrypoint prevents stale browser modules after major upgrades.
 import { api } from "../../scripts/api.js";
 import { app } from "../../scripts/app.js";
 
-const EXTENSION_NAME = "gokayfem.texture-simple";
+const EXTENSION_NAME = "gokayfem.texture-simple.viewer";
 const PATCHED = Symbol("textureViewerPatched");
-const VIEWER_URL = new URL("./html/threeVisualizer.html", import.meta.url).href;
+const VIEWER_URL = new URL("./html/threeVisualizer.html?v=3.0.0", import.meta.url).href;
 const MAP_NAMES = [
     "color",
     "displacement",
@@ -13,6 +14,18 @@ const MAP_NAMES = [
     "roughness",
     "alpha",
 ];
+
+function normalizeOutput(message) {
+    const payload = message?.output ?? message ?? {};
+    return Object.fromEntries(
+        MAP_NAMES.map((name) => [name, payload[name] ?? []]),
+    );
+}
+
+function hasViewerOutput(message) {
+    const payload = message?.output ?? message ?? {};
+    return MAP_NAMES.some((name) => (payload[name]?.length ?? 0) > 0);
+}
 
 function chainCallback(previous, next) {
     return function chainedCallback(...args) {
@@ -35,8 +48,7 @@ function createViewer(node) {
 
     const iframe = document.createElement("iframe");
     iframe.title = "Interactive PBR texture preview";
-    iframe.src = VIEWER_URL;
-    iframe.loading = "eager";
+    iframe.loading = "lazy";
     iframe.setAttribute(
         "sandbox",
         "allow-scripts allow-same-origin allow-downloads",
@@ -48,12 +60,11 @@ function createViewer(node) {
         display: "block",
         background: "#14171c",
     });
-    container.append(iframe);
-
     const channel = globalThis.crypto?.randomUUID?.()
         ?? `texture-${Date.now()}-${Math.random()}`;
     let ready = false;
-    let pendingOutput = null;
+    let lastOutput = null;
+    let restoring = false;
 
     const post = (type, payload = {}) => {
         iframe.contentWindow?.postMessage(
@@ -69,9 +80,41 @@ function createViewer(node) {
 
     const initialize = () => {
         post("initialize", { viewUrl: api.apiURL("/view") });
-        if (pendingOutput) {
-            post("update", { output: pendingOutput });
-            pendingOutput = null;
+        if (lastOutput) {
+            post("update", { output: lastOutput });
+        }
+    };
+
+    const restoreLatestOutput = async () => {
+        if (lastOutput || restoring) {
+            return;
+        }
+        restoring = true;
+        try {
+            const response = await api.fetchApi("/history?max_items=32");
+            if (!response.ok) {
+                return;
+            }
+            const histories = Object.values(await response.json()).reverse();
+            for (const history of histories) {
+                const nodeId = String(node.id);
+                const graph = history?.prompt?.[2];
+                const output = history?.outputs?.[nodeId];
+                if (
+                    graph?.[nodeId]?.class_type === "TextureViewer"
+                    && hasViewerOutput(output)
+                ) {
+                    lastOutput = normalizeOutput(output);
+                    if (ready) {
+                        post("update", { output: lastOutput });
+                    }
+                    break;
+                }
+            }
+        } catch (error) {
+            console.debug("[Texture Viewer] Cached output restore skipped.", error);
+        } finally {
+            restoring = false;
         }
     };
 
@@ -87,6 +130,7 @@ function createViewer(node) {
         }
         ready = true;
         initialize();
+        void restoreLatestOutput();
     };
 
     window.addEventListener("message", onMessage);
@@ -94,6 +138,13 @@ function createViewer(node) {
         ready = false;
         post("connect");
     });
+    iframe.src = VIEWER_URL;
+    container.append(iframe);
+    const connectTimer = window.setInterval(() => {
+        if (!ready) {
+            post("connect");
+        }
+    }, 500);
 
     const widget = node.addDOMWidget(
         "texture_preview",
@@ -101,7 +152,7 @@ function createViewer(node) {
         container,
         {
             canvasOnly: true,
-            hideOnZoom: false,
+            hideOnZoom: true,
         },
     );
     widget.serialize = false;
@@ -120,14 +171,29 @@ function createViewer(node) {
     }
 
     node.__textureViewerUpdate = (output) => {
+        lastOutput = output;
         if (!ready) {
-            pendingOutput = output;
             return;
         }
         post("update", { output });
     };
 
+    const onExecution = ({ detail }) => {
+        const outputNodeId = String(detail?.node ?? "").split(":")[0];
+        if (outputNodeId === String(node.id)) {
+            node.__textureViewerUpdate?.(normalizeOutput(detail?.output));
+        }
+    };
+    const onExecutionCached = () => {
+        void restoreLatestOutput();
+    };
+    api.addEventListener("executed", onExecution);
+    api.addEventListener("execution_cached", onExecutionCached);
+
     node.onRemoved = chainCallback(node.onRemoved, () => {
+        window.clearInterval(connectTimer);
+        api.removeEventListener("executed", onExecution);
+        api.removeEventListener("execution_cached", onExecutionCached);
         window.removeEventListener("message", onMessage);
         post("dispose");
         iframe.src = "about:blank";
@@ -147,16 +213,19 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function onTextureViewerCreated(...args) {
             const result = onNodeCreated?.apply(this, args);
             createViewer(this);
+            requestAnimationFrame(() => {
+                const cached = app.nodeOutputs?.[this.id];
+                if (cached) {
+                    this.__textureViewerUpdate?.(normalizeOutput(cached));
+                }
+            });
             return result;
         };
 
         const onExecuted = nodeType.prototype.onExecuted;
         nodeType.prototype.onExecuted = function onTextureViewerExecuted(message) {
             const result = onExecuted?.apply(this, arguments);
-            const output = Object.fromEntries(
-                MAP_NAMES.map((name) => [name, message?.[name] ?? []]),
-            );
-            this.__textureViewerUpdate?.(output);
+            this.__textureViewerUpdate?.(normalizeOutput(message));
             return result;
         };
     },

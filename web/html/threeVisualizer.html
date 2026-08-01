@@ -29,12 +29,35 @@
                 </div>
                 <label>Roughness <input id="roughness" type="range" min="0" max="1" step="0.01" value="0.65"></label>
                 <label>Metalness <input id="metalness" type="range" min="0" max="1" step="0.01" value="0"></label>
-                <label>Displacement <input id="displacement" type="range" min="-2" max="2" step="0.01" value="0.15"></label>
-                <label>Normal strength <input id="normal-strength" type="range" min="0" max="3" step="0.05" value="1"></label>
+                <label>Displacement <input id="displacement" type="range" min="-2" max="2" step="0.005" value="0.025"></label>
+                <label>Normal strength <input id="normal-strength" type="range" min="0" max="3" step="0.05" value="0.7"></label>
                 <label>AO strength <input id="ao-strength" type="range" min="0" max="3" step="0.05" value="1"></label>
                 <label>Repeat X <input id="repeat-x" type="number" min="0.1" max="20" step="0.1" value="1"></label>
                 <label>Repeat Y <input id="repeat-y" type="number" min="0.1" max="20" step="0.1" value="1"></label>
+                <label>
+                    View
+                    <select id="view-mode">
+                        <option value="material">PBR material</option>
+                        <option value="color">Color map</option>
+                        <option value="normal">Normal map</option>
+                        <option value="roughness">Roughness map</option>
+                        <option value="metalness">Metalness map</option>
+                        <option value="ao">AO map</option>
+                        <option value="displacement">Displacement map</option>
+                    </select>
+                </label>
+                <label>
+                    Tone mapping
+                    <select id="tone-mapping">
+                        <option value="aces">ACES filmic</option>
+                        <option value="neutral">Neutral</option>
+                        <option value="linear">Linear</option>
+                        <option value="none">None</option>
+                    </select>
+                </label>
+                <label>Exposure <input id="exposure" type="range" min="0.1" max="3" step="0.05" value="1"></label>
                 <label>Background <input id="background" type="color" value="#252a31"></label>
+                <label class="checkbox"><input id="wireframe" type="checkbox"> Wireframe overlay</label>
                 <label class="checkbox"><input id="auto-rotate" type="checkbox"> Auto rotate</label>
             </section>
 
@@ -70,6 +93,6 @@
             </section>
         </main>
 
-        <script type="module" src="../js/threeVisualizer.mjs"></script>
+        <script type="module" src="../js/threeVisualizer.mjs?v=3.0.0"></script>
     </body>
 </html>

@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-texture-simple"
-description = "Interactive, batch-aware PBR texture and custom-mesh viewer for ComfyUI"
-version = "2.0.0"
+description = "Offline PBR texture authoring, analysis, channel packing, tiling, and interactive 3D validation for ComfyUI"
+version = "3.0.0"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 dependencies = [

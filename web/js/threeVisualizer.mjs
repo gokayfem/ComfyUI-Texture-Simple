@@ -4,8 +4,9 @@ import { GLTFLoader } from "../vendor/GLTFLoader.mjs";
 import { OBJLoader } from "../vendor/OBJLoader.mjs";
 import { GLTFExporter } from "../vendor/GLTFExporter.mjs";
 import { OBJExporter } from "../vendor/OBJExporter.mjs";
+import { RoomEnvironment } from "../vendor/RoomEnvironment.mjs";
 
-const SOURCE = "gokayfem.texture-simple";
+const SOURCE = "gokayfem.texture-simple.viewer";
 const MAP_NAMES = [
     "color",
     "displacement",
@@ -41,10 +42,18 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1;
 container.append(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x252a31);
+const environmentGenerator = new THREE.PMREMGenerator(renderer);
+const roomEnvironment = new RoomEnvironment();
+const environmentTarget = environmentGenerator.fromScene(roomEnvironment, 0.04);
+scene.environment = environmentTarget.texture;
+roomEnvironment.dispose();
+environmentGenerator.dispose();
 const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 5000);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -64,9 +73,10 @@ const previewMaterial = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
     roughness: 0.65,
     metalness: 0,
+    displacementScale: 0.025,
     side: THREE.DoubleSide,
 });
-previewMaterial.normalScale.set(1, 1);
+previewMaterial.normalScale.set(0.7, 0.7);
 
 let channel = null;
 let viewUrl = null;
@@ -76,6 +86,8 @@ let fittedBox = null;
 let updateVersion = 0;
 let animationFrame = null;
 let disposed = false;
+let contextLost = false;
+let inViewport = true;
 let textures = new Map();
 const clock = new THREE.Clock();
 
@@ -120,15 +132,24 @@ function disposeOriginalMaterial(material) {
             value.dispose();
         }
     }
+    for (const uniform of Object.values(material.uniforms ?? {})) {
+        if (uniform?.value?.isTexture) {
+            uniform.value.dispose();
+        }
+    }
     material.dispose();
 }
 
 function applyPreviewMaterial(root) {
+    let missingUv = 0;
     root.traverse((child) => {
         if (!child.isMesh) {
             return;
         }
         prepareGeometry(child.geometry);
+        if (!child.geometry.attributes.uv) {
+            missingUv += 1;
+        }
         const originals = Array.isArray(child.material)
             ? child.material
             : [child.material];
@@ -137,6 +158,9 @@ function applyPreviewMaterial(root) {
         child.castShadow = true;
         child.receiveShadow = true;
     });
+    if (missingUv) {
+        setStatus(`${missingUv} mesh part(s) have no UV coordinates; texture maps cannot be sampled there.`);
+    }
 }
 
 function disposeRoot(root) {
@@ -247,8 +271,12 @@ function loadTexture(name, descriptor) {
 }
 
 function updateTextureRepeats() {
-    const repeatX = Number(document.querySelector("#repeat-x").value);
-    const repeatY = Number(document.querySelector("#repeat-y").value);
+    const xInput = document.querySelector("#repeat-x");
+    const yInput = document.querySelector("#repeat-y");
+    const repeatX = THREE.MathUtils.clamp(Number(xInput.value) || 1, 0.1, 20);
+    const repeatY = THREE.MathUtils.clamp(Number(yInput.value) || 1, 0.1, 20);
+    xInput.value = String(repeatX);
+    yInput.value = String(repeatY);
     for (const texture of textures.values()) {
         texture.repeat.set(repeatX, repeatY);
         texture.needsUpdate = true;
@@ -260,13 +288,34 @@ function applyTextures(nextTextures) {
         texture.dispose();
     }
     textures = nextTextures;
-    for (const [name, slot] of Object.entries(MATERIAL_SLOTS)) {
-        previewMaterial[slot] = textures.get(name) ?? null;
-    }
     previewMaterial.transparent = textures.has("alpha");
     previewMaterial.alphaTest = textures.has("alpha") ? 0.01 : 0;
-    previewMaterial.needsUpdate = true;
+    applyViewMode();
     updateTextureRepeats();
+}
+
+function applyViewMode() {
+    const mode = document.querySelector("#view-mode").value;
+    for (const slot of Object.values(MATERIAL_SLOTS)) {
+        previewMaterial[slot] = null;
+    }
+    previewMaterial.emissiveMap = null;
+    previewMaterial.emissive.set(0x000000);
+    if (mode === "material") {
+        for (const [name, slot] of Object.entries(MATERIAL_SLOTS)) {
+            previewMaterial[slot] = textures.get(name) ?? null;
+        }
+        previewMaterial.roughness = Number(document.querySelector("#roughness").value);
+        previewMaterial.metalness = Number(document.querySelector("#metalness").value);
+    } else {
+        const isolated = textures.get(mode) ?? null;
+        previewMaterial.emissiveMap = isolated;
+        previewMaterial.emissive.set(0xffffff);
+        previewMaterial.roughness = 1;
+        previewMaterial.metalness = 0;
+    }
+    previewMaterial.wireframe = document.querySelector("#wireframe").checked;
+    previewMaterial.needsUpdate = true;
 }
 
 async function showFrame(index) {
@@ -367,6 +416,7 @@ function updateMaterialSettings() {
         document.querySelector("#ao-strength").value,
     );
     updateTextureRepeats();
+    applyViewMode();
 }
 
 function download(blob, filename) {
@@ -417,14 +467,30 @@ function animate() {
         document.querySelector("#auto-rotate").checked
         && previewRoot
         && document.visibilityState === "visible"
+        && inViewport
     ) {
         previewRoot.rotation.y += delta * 0.45;
     }
-    if (document.visibilityState === "visible") {
+    if (document.visibilityState === "visible" && inViewport && !contextLost) {
         controls.update();
         renderer.render(scene, camera);
     }
 }
+
+const intersectionObserver = new IntersectionObserver(([entry]) => {
+    inViewport = entry?.isIntersecting ?? true;
+});
+intersectionObserver.observe(container);
+renderer.domElement.addEventListener("webglcontextlost", (event) => {
+    event.preventDefault();
+    contextLost = true;
+    setError("The browser paused this WebGL context. It will recover automatically.");
+});
+renderer.domElement.addEventListener("webglcontextrestored", () => {
+    contextLost = false;
+    setStatus("WebGL restored; rebuilding material preview…");
+    void showFrame(Number(batchSelect.value || 0));
+});
 
 buildPrimitive("sphere");
 animate();
@@ -466,9 +532,22 @@ for (const selector of [
     "#ao-strength",
     "#repeat-x",
     "#repeat-y",
+    "#view-mode",
+    "#wireframe",
 ]) {
     document.querySelector(selector).addEventListener("input", updateMaterialSettings);
 }
+document.querySelector("#tone-mapping").addEventListener("change", (event) => {
+    renderer.toneMapping = {
+        aces: THREE.ACESFilmicToneMapping,
+        neutral: THREE.NeutralToneMapping,
+        linear: THREE.LinearToneMapping,
+        none: THREE.NoToneMapping,
+    }[event.target.value];
+});
+document.querySelector("#exposure").addEventListener("input", (event) => {
+    renderer.toneMappingExposure = Number(event.target.value);
+});
 document.querySelector("#background").addEventListener("input", (event) => {
     scene.background.set(event.target.value);
 });
@@ -494,12 +573,14 @@ window.addEventListener("message", (event) => {
     }
     if (event.data.type === "initialize") {
         viewUrl = event.data.viewUrl;
+        setStatus("Viewer connected — queue texture maps to begin.");
     } else if (event.data.type === "update") {
         setOutput(event.data.output);
     } else if (event.data.type === "dispose") {
         disposed = true;
         updateVersion += 1;
         cancelAnimationFrame(animationFrame);
+        intersectionObserver.disconnect();
         for (const texture of textures.values()) {
             texture.dispose();
         }
@@ -509,6 +590,7 @@ window.addEventListener("message", (event) => {
             disposeRoot(previewRoot);
         }
         previewMaterial.dispose();
+        environmentTarget.dispose();
         controls.dispose();
         renderer.dispose();
     }
