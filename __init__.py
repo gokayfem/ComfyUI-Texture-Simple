@@ -9,6 +9,17 @@ import folder_paths
 import numpy as np
 from PIL import Image
 
+try:
+    from .texture_nodes import (
+        NODE_CLASS_MAPPINGS as TOOL_NODE_CLASS_MAPPINGS,
+        NODE_DISPLAY_NAME_MAPPINGS as TOOL_NODE_DISPLAY_NAME_MAPPINGS,
+    )
+except (ImportError, ModuleNotFoundError):  # Standalone import used by pytest.
+    from texture_nodes import (  # type: ignore[no-redef]
+        NODE_CLASS_MAPPINGS as TOOL_NODE_CLASS_MAPPINGS,
+        NODE_DISPLAY_NAME_MAPPINGS as TOOL_NODE_DISPLAY_NAME_MAPPINGS,
+    )
+
 
 MAP_MODES = {
     "color": "RGB",
@@ -21,7 +32,7 @@ MAP_MODES = {
 }
 
 
-def _as_pil(image: Any, mode: str) -> Image.Image:
+def _as_pil(image: Any, mode: str, *, bit_depth: int = 8) -> Image.Image:
     array = image.detach().cpu().float().numpy()
     array = np.nan_to_num(array, nan=0.0, posinf=1.0, neginf=0.0)
     array = np.clip(array, 0.0, 1.0)
@@ -37,10 +48,12 @@ def _as_pil(image: Any, mode: str) -> Image.Image:
     else:
         raise ValueError(f"Expected an HxW, HxWx1, or HxWx3+ image, got {array.shape}.")
 
-    converted = Image.fromarray(
-        (array * 255.0).round().astype(np.uint8),
-        mode=source_mode,
-    )
+    if bit_depth == 16 and mode == "L":
+        if source_mode == "RGB":
+            array = array[..., 0] * 0.2126 + array[..., 1] * 0.7152 + array[..., 2] * 0.0722
+        converted = Image.fromarray((array * 65535.0).round().astype(np.uint16))
+        return converted
+    converted = Image.fromarray((array * 255.0).round().astype(np.uint8), mode=source_mode)
     return converted.convert(mode)
 
 
@@ -81,7 +94,8 @@ class TextureViewer:
             },
         }
 
-    RETURN_TYPES = ()
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("passthrough",)
     OUTPUT_NODE = True
     FUNCTION = "process_images"
     CATEGORY = "visualization/3D"
@@ -128,18 +142,30 @@ class TextureViewer:
             mode = MAP_MODES[map_type]
             saved[map_type] = [
                 _save_map(
-                    _as_pil(image, mode),
+                    _as_pil(
+                        image,
+                        mode,
+                        bit_depth=16 if map_type == "displacement" else 8,
+                    ),
                     map_type=map_type,
                     batch_number=index,
                 )
                 for index, image in enumerate(batch)
             ]
 
-        return {"ui": saved}
+        passthrough = next((batch for batch in provided.values() if batch is not None), None)
+        if passthrough is None:
+            import torch
+
+            passthrough = torch.zeros((1, 1, 1, 3), dtype=torch.float32)
+        return {"ui": saved, "result": (passthrough,)}
 
 
-NODE_CLASS_MAPPINGS = {"TextureViewer": TextureViewer}
-NODE_DISPLAY_NAME_MAPPINGS = {"TextureViewer": "Texture Viewer"}
+NODE_CLASS_MAPPINGS = {"TextureViewer": TextureViewer, **TOOL_NODE_CLASS_MAPPINGS}
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "TextureViewer": "Texture Viewer Pro",
+    **TOOL_NODE_DISPLAY_NAME_MAPPINGS,
+}
 WEB_DIRECTORY = "./web"
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]

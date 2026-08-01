@@ -1,0 +1,14 @@
+{
+  "prompt": {
+    "1": {"class_type":"LoadImage","inputs":{"image":"NL52ydw04m1e3nXl_A7Xr_image.png"}},
+    "2": {"class_type":"TextureNormalFromHeight","inputs":{"height":["1",0],"strength":3.0,"blur_px":1,"convention":"OpenGL (+Y)","wrap_edges":true}},
+    "3": {"class_type":"TextureAOFromHeight","inputs":{"height":["1",0],"strength":3.0,"radius_px":18,"directions":"8","wrap_edges":true}},
+    "4": {"class_type":"TextureMakeTileable","inputs":{"image":["1",0],"method":"Offset + feather","blend_fraction":0.12}},
+    "5": {"class_type":"TexturePBRAnalyze","inputs":{"image":["4",0],"role":"albedo"}},
+    "6": {"class_type":"TextureViewer","inputs":{"color_map":["4",0],"displacement_map":["1",0],"normal_map":["2",0],"ao_map":["3",0]}},
+    "7": {"class_type":"PreviewImage","inputs":{"images":["4",1]}},
+    "8": {"class_type":"PreviewImage","inputs":{"images":["2",0]}},
+    "9": {"class_type":"PreviewImage","inputs":{"images":["3",0]}},
+    "10": {"class_type":"PreviewImage","inputs":{"images":["5",1]}}
+  }
+}

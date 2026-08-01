@@ -1,25 +1,32 @@
 # ComfyUI Texture Simple
 
-An interactive PBR material viewer inside ComfyUI. Preview any combination of
-color, displacement, normal, ambient-occlusion, metalness, roughness, and alpha
-maps on built-in primitives or your own GLB/OBJ mesh.
+A complete offline PBR texture-authoring and live material-validation toolkit for ComfyUI. It turns ordinary images or height maps into production-ready supporting maps, checks them, proves tiling, packs channels, and previews the result on a GPU-accelerated 3D material without leaving the graph.
 
-![Texture Viewer](https://github.com/gokayfem/ComfyUI-Texture-Simple/assets/88277926/594f4b2b-12a6-40a9-9ecc-8f56c5c0448f)
+![Executed Texture Toolkit workflow in ComfyUI](docs/assets/live-comfyui.png)
 
-## Features
+## Nodes
 
-- Modern ComfyUI DOM-widget integration
-- Sphere, cube, torus, plane, and multi-object showcase
-- Local GLB and OBJ mesh loading in the browser
-- Batch-aware texture-map selection with single-map broadcasting
-- Live roughness, metalness, displacement, normal, AO, repeat, and background controls
-- Optional auto-rotation
-- PNG screenshots and GLB, GLTF, or OBJ export
-- Pinned local Three.js assets with no CDN dependency
-- Correct copy/paste, collapse, resize, removal, and WebGL cleanup
-- Stale-load cancellation and visible errors
+| Node | Purpose | Outputs |
+| --- | --- | --- |
+| **Texture Viewer Pro** | Interactive WebGL PBR preview on primitives or a local GLB/OBJ | IMAGE passthrough + live UI |
+| **Normal from Height (PBR)** | Wrapped finite-difference normal generation with optional blur and OpenGL/DirectX convention | normal map |
+| **AO from Height (PBR)** | Fast multi-direction ambient-occlusion approximation with wrapped edges | AO map |
+| **Make Texture Tileable** | Offset-and-feather or mirrored seamless conversion | tileable map, 2×2 proof, seam report |
+| **Pack PBR Channels** | RGBA/ORM channel packing with scalar broadcasting | packed texture, manifest |
+| **Extract Texture Channel** | Extract red, green, blue, alpha, luminance, max, or average | IMAGE channel + MASK |
+| **Analyze PBR Texture** | Role-aware range, clipping, seam, and normal-quality checks | JSON report + diagnostic image |
 
-## Installation
+## Viewer highlights
+
+- Sphere, cube, torus, plane, multi-object showcase, and local GLB/OBJ loading
+- Color, displacement, normal, AO, metalness, roughness, and alpha inputs
+- Per-map inspection, repeat controls, wireframe, ACES/Neutral/Linear tone mapping, exposure, and IBL
+- Batch selection with single-image broadcasting
+- PNG capture and GLB, GLTF, or OBJ export
+- Lazy/offscreen rendering, bounded device pixel ratio, stale-load cancellation, texture disposal, and WebGL context recovery
+- Local pinned Three.js r185 assets; no runtime CDN or telemetry
+
+## Install
 
 Install with ComfyUI Manager, or clone manually:
 
@@ -29,44 +36,53 @@ git clone https://github.com/gokayfem/ComfyUI-Texture-Simple.git
 python -m pip install -r ComfyUI-Texture-Simple/requirements.txt
 ```
 
-Restart ComfyUI after installation.
+Restart ComfyUI. The nodes are under `visualization/3D` and `texture/PBR`.
 
-## Usage
+## Start with the live example
 
-1. Add **Texture Viewer** from `visualization/3D`.
-2. Connect any texture maps you have and queue the workflow.
-3. Choose a built-in mesh, or select **Load GLB/OBJ** for a local model.
-4. Open **Material** to tune PBR values and texture tiling.
+Load [`examples/workflows/Texture-Toolkit-Live.json`](examples/workflows/Texture-Toolkit-Live.json), choose an image in **Load Image**, and queue it. The graph creates a seamless texture, normal map, AO map, diagnostics, and a live 3D material. An API-format counterpart is in [`examples/api/texture_toolkit_api.json`](examples/api/texture_toolkit_api.json); replace its image filename with one from your ComfyUI input directory.
 
-When one texture input contains a single image and another contains a batch, the
-single texture is reused for every frame. Other mismatched batch sizes produce
-a clear error.
+For a typical PBR pipeline:
 
-GLB is the recommended export format. OBJ contains geometry only. The glTF
-material standard does not support displacement maps, so displacement remains a
-live preview control rather than a baked glTF property.
+1. Scale/crop the source to the intended working resolution.
+2. Make it tileable and inspect the 2×2 proof.
+3. Generate normal and AO maps from a suitable height map.
+4. Analyze every map using the correct role.
+5. Pack ORM channels when targeting glTF engines.
+6. Connect the maps to **Texture Viewer Pro** and tune the live material.
+
+## Compatibility and performance
+
+- Python 3.10+; tested in CI on Linux, Windows, and macOS
+- Real ComfyUI test: ComfyUI 0.3.60, frontend 1.26.13, Windows, NVIDIA RTX 3090
+- NVIDIA, AMD/ROCm, Apple Silicon, Intel, and CPU-only ComfyUI installations are supported: authoring nodes use NumPy/Pillow on the CPU, while the interactive preview uses the browser's WebGL implementation
+- Images remain local. Browser-loaded meshes are processed in memory and are never uploaded
+- Viewer displacement is intentionally conservative by default so arbitrary inputs remain stable
 
 ## Development
 
 ```bash
-python -m pip install pytest
+python -m pip install -r requirements.txt pytest build
+python -m compileall -q .
 pytest -q
+python -m build
+node --check web/viewer_extension_3_0.js
+node --check web/js/threeVisualizer.mjs
 ```
 
-The browser assets are vendored from Three.js 0.185.1. Its MIT license is in
-`web/vendor/THREE-LICENSE.txt`.
+The vendored Three.js files are MIT licensed; see `web/vendor/THREE-LICENSE.txt`. Security and privacy details are in [`SECURITY.md`](SECURITY.md).
 
 <details>
 <summary><strong>Cite this project</strong></summary>
 
-If ComfyUI Texture Simple supports your work, please cite the software. GitHub
-also provides ready-to-copy APA and BibTeX entries via **Cite this repository**.
+If ComfyUI Texture Simple supports your work, GitHub provides ready-to-copy APA
+and BibTeX entries via **Cite this repository**.
 
 ```bibtex
 @software{Aydogan_ComfyUI_Texture_Simple_2026,
   author  = {Aydoğan, Gökay},
   title   = {ComfyUI Texture Simple},
-  version = {2.0.0},
+  version = {3.0.0},
   year    = {2026},
   url     = {https://github.com/gokayfem/ComfyUI-Texture-Simple}
 }
